@@ -1,3 +1,8 @@
 <resources>
-    <string name="app_name">MendikotApp</string>
+    <string name="app_name">Mendikot</string>
+    <string name="start_new_game">Start New Game</string>
+    <string name="setup_title">Player Setup</string>
+    <string name="enter_your_name">Enter your name</string>
+    <string name="bot_players">Bot Players</string>
+    <string name="proceed">Proceed</string>
 </resources>
