@@ -5,4 +5,9 @@
     <string name="enter_your_name">Enter your name</string>
     <string name="bot_players">Bot Players</string>
     <string name="proceed">Proceed</string>
+    <string name="team_1">Team 1</string>
+    <string name="team_2">Team 2</string>
+    <string name="show_history">Show History</string>
+    <string name="trick_history">Trick History</string>
+    <string name="close">Close</string>
 </resources>

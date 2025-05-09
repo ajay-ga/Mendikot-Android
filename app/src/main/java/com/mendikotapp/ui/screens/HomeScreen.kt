@@ -8,36 +8,32 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.mendikotapp.R
 
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(
+    onNavigateToSetup: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically)
+        verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.headlineLarge,
-            textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.primary
         )
-        
-        ElevatedButton(
-            onClick = { navController.navigate("player_setup") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp)
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Button(
+            onClick = onNavigateToSetup,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = stringResource(R.string.start_new_game),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            Text(stringResource(R.string.start_new_game))
         }
     }
 } 

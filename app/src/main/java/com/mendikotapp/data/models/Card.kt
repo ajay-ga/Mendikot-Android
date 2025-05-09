@@ -1,40 +1,43 @@
 package com.mendikotapp.data.models
 
-enum class Suit {
-    HEARTS, DIAMONDS, CLUBS, SPADES
-}
-
-enum class Rank(val value: Int) {
-    ACE(1),
-    TWO(2),
-    THREE(3),
-    FOUR(4),
-    FIVE(5),
-    SIX(6),
-    SEVEN(7),
-    EIGHT(8),
-    NINE(9),
-    TEN(10),
-    JACK(11),
-    QUEEN(12),
-    KING(13)
+enum class Suit(val symbol: String) {
+    HEARTS("♥"),
+    DIAMONDS("♦"),
+    CLUBS("♣"),
+    SPADES("♠")
 }
 
 data class Card(
     val suit: Suit,
-    val rank: Rank,
-    val isTrump: Boolean = false
+    val value: Int  // 2-10 = 2-10, J=11, Q=12, K=13, A=14
 ) {
-    val isTen: Boolean get() = rank == Rank.TEN
+    val isTen: Boolean get() = value == 10
     
-    fun isHigherThan(other: Card, ledSuit: Suit): Boolean {
+    val rank: String get() = when (value) {
+        14 -> "A"
+        13 -> "K"
+        12 -> "Q"
+        11 -> "J"
+        else -> value.toString()
+    }
+    
+    override fun toString(): String = "$rank${suit.symbol}"
+    
+    fun isHigherThan(other: Card, ledSuit: Suit, trumpSuit: Suit? = null): Boolean {
         return when {
-            this.isTrump && !other.isTrump -> true
-            !this.isTrump && other.isTrump -> false
-            this.isTrump && other.isTrump -> this.rank.value > other.rank.value
+            // Trump cards beat everything
+            this.suit == trumpSuit && other.suit != trumpSuit -> true
+            other.suit == trumpSuit && this.suit != trumpSuit -> false
+            
+            // If both cards are trump, higher value wins
+            this.suit == trumpSuit && other.suit == trumpSuit -> this.value > other.value
+            
+            // Following suit beats non-following suit
             this.suit == ledSuit && other.suit != ledSuit -> true
-            this.suit != ledSuit && other.suit == ledSuit -> false
-            else -> this.rank.value > other.rank.value
+            other.suit == ledSuit && this.suit != ledSuit -> false
+            
+            // If both cards follow suit or both don't, higher value wins
+            else -> this.value > other.value
         }
     }
 } 

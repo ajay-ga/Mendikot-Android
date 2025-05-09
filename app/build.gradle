@@ -63,4 +63,7 @@ dependencies {
 
     // Lottie
     implementation libs.lottie.compose
+
+    // Material Icons Extended
+    implementation libs.androidx.material.icons.extended
 }
