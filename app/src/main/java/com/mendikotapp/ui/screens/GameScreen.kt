@@ -270,11 +270,29 @@ fun GameScreen(
                 }
             }
         } else {
-            // Current player indicator
-            CurrentPlayerIndicator(
-                playerName = gameState?.players?.get(gameState?.currentPlayer ?: 0)?.name ?: "",
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Team information
+                TeamInfo(
+                    team1Players = listOf(
+                        gameState?.players?.get(0)?.name ?: "",
+                        gameState?.players?.get(2)?.name ?: ""
+                    ),
+                    team2Players = listOf(
+                        gameState?.players?.get(1)?.name ?: "",
+                        gameState?.players?.get(3)?.name ?: ""
+                    )
+                )
+                
+                // Current player indicator
+                CurrentPlayerIndicator(
+                    playerName = gameState?.players?.get(gameState?.currentPlayer ?: 0)?.name ?: "",
+                    playerTeam = (gameState?.currentPlayer ?: 0) % 2
+                )
+            }
 
             // Game play area
             Box(
