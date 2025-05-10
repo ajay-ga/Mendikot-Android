@@ -37,7 +37,7 @@ class PlayerSetupViewModel @Inject constructor(
 
     fun setupPlayers(humanPlayerName: String) {
         // Create initial game state with random dealer
-        val dealer = Random.nextInt(4)
+        val dealer = Random.nextInt(1, 4)
         
         val players = listOf(
             Player(
