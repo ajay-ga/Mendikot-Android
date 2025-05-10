@@ -29,6 +29,12 @@ import com.mendikotapp.data.models.GamePhase
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import com.mendikotapp.data.models.Suit
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.ui.draw.scale
+import androidx.compose.material.icons.filled.Star
 
 @Composable
 private fun TrumpCard(
@@ -149,6 +155,7 @@ private fun Scoreboard(
 @Composable
 private fun CurrentPlayerIndicator(
     playerName: String,
+    playerTeam: Int,
     modifier: Modifier = Modifier
 ) {
     Surface(
