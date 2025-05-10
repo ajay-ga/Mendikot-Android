@@ -90,7 +90,7 @@ class GameSetupViewModel @Inject constructor(
         // Initialize new game state with the game mode
         _gameState.value = GameState(
             players = players,
-            currentDealer = Random.nextInt(4),
+            currentDealer = Random.nextInt(1,4),
             currentPlayer = 0,
             gamePhase = GamePhase.TRUMP_SELECTION,
             gameMode = _gameMode.value ?: "single_player"  // Set the game mode
