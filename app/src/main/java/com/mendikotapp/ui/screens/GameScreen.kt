@@ -870,6 +870,39 @@ private fun CurrentTrick(
     if(gamePhase == GamePhase.COMPLETED) {
         return
     }
+
+    // Add state for winner highlight
+    var winningPlayerIndex by remember { mutableStateOf<Int?>(null) }
+    val scale by animateFloatAsState(
+        targetValue = if (winningPlayerIndex != null) 1.2f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+
+    // Check for trick completion
+    LaunchedEffect(trick) {
+        if (trick.size == 4) {
+            // Determine winner based on trick rules
+            val leadSuit = trick.first().second.suit
+            val winningCard = trick.maxByOrNull { (_, card) ->
+                when {
+                    card.suit == trumpSuit -> 100 + card.value
+                    card.suit == leadSuit -> card.value
+                    else -> -1
+                }
+            }
+            winningPlayerIndex = winningCard?.first
+            
+            // Reset winner highlight after delay
+            delay(1500)
+            winningPlayerIndex = null
+        } else {
+            winningPlayerIndex = null
+        }
+    }
+
     Box(modifier = modifier) {
         (0..3).forEach { playerIndex ->
             val playedCard = trick.find { it.first == playerIndex }
@@ -883,7 +916,6 @@ private fun CurrentTrick(
                 }
             ) {
                 if (playedCard != null) {
-                    // Show played card
                     PlayingCard(
                         card = playedCard.second,
                         onClick = {},
@@ -891,14 +923,24 @@ private fun CurrentTrick(
                             .size(cardWidth, cardHeight)
                             .padding(
                                 when (playerIndex) {
-                                    2 -> PaddingValues(start = 16.dp)
+                                    2 -> PaddingValues(0.dp)
                                     else -> PaddingValues(0.dp)
                                 }
+                            )
+                            .then(
+                                if (playerIndex == winningPlayerIndex) {
+                                    Modifier
+                                        .scale(scale)
+                                        .border(
+                                            width = 2.dp,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            shape = MaterialTheme.shapes.medium
+                                        )
+                                } else Modifier
                             ),
                         isTrumpSuit = playedCard.second.suit == trumpSuit
                     )
                 } else {
-                    // Show placeholder for players who haven't played
                     PlayerPlaceholder(
                         playerName = players[playerIndex].name,
                         cardCount = players[playerIndex].hand.size,
