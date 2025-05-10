@@ -23,6 +23,22 @@ fun RoundSummaryDialog(
 ) {
     var showContent by remember { mutableStateOf(false) }
     
+    // Celebration emojis based on win type
+    val celebrationEmojis = when (roundResult.winType) {
+        WinType.MENDIKOT -> "🎯 🎊 👑"
+        WinType.WHITEWASH -> "💫 🌟 ⭐"
+        WinType.REGULAR -> "🎉 🏆 ✨"
+    }
+    
+    // Rotation animation for the title
+    val rotation by animateFloatAsState(
+        targetValue = if (showContent) 360f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+    
     LaunchedEffect(Unit) {
         showContent = true
     }
@@ -40,19 +56,21 @@ fun RoundSummaryDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Animated title
+                // Animated title with emojis
                 AnimatedVisibility(
                     visible = showContent,
                     enter = fadeIn() + expandVertically()
                 ) {
                     Text(
                         text = when (roundResult.winType) {
-                            WinType.MENDIKOT -> "MENDIKOT!"
-                            WinType.WHITEWASH -> "WHITEWASH!"
-                            WinType.REGULAR -> "Round Complete"
+                            WinType.MENDIKOT -> "🎯 MENDIKOT! 👑"
+                            WinType.WHITEWASH -> "💫 WHITEWASH! ⭐"
+                            WinType.REGULAR -> "🎉 Round Complete 🎊"
                         },
                         style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.graphicsLayer(rotationZ = rotation)
                     )
                 }
 
@@ -60,45 +78,80 @@ fun RoundSummaryDialog(
                 var scale by remember { mutableStateOf(0f) }
                 LaunchedEffect(showContent) {
                     if (showContent) {
-                        animate(0f, 1f, animationSpec = spring()) { value, _ ->
+                        animate(0f, 1f, animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        )) { value, _ ->
                             scale = value
                         }
                     }
                 }
                 
-                Text(
-                    text = "Team ${roundResult.winningTeam + 1} Wins!",
-                    style = MaterialTheme.typography.titleLarge,
+                Surface(
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.graphicsLayer(
                         scaleX = scale,
                         scaleY = scale
                     )
-                )
+                ) {
+                    Text(
+                        text = "$celebrationEmojis\nTeam ${roundResult.winningTeam + 1} Wins!\n$celebrationEmojis",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
 
                 // Score details with slide animation
                 AnimatedVisibility(
                     visible = showContent,
                     enter = slideInHorizontally() + fadeIn()
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = MaterialTheme.shapes.medium,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        ScoreRow("Team 1", roundResult.team1Tricks, roundResult.team1Tens)
-                        ScoreRow("Team 2", roundResult.team2Tricks, roundResult.team2Tens)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Final Scores",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            ScoreRow("Team 1", roundResult.team1Tricks, roundResult.team1Tens)
+                            ScoreRow("Team 2", roundResult.team2Tricks, roundResult.team2Tens)
+                        }
                     }
                 }
 
-                // Buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                // Buttons with fade animation
+                AnimatedVisibility(
+                    visible = showContent,
+                    enter = fadeIn(
+                        initialAlpha = 0.3f
+                    ) + expandVertically()
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Close")
-                    }
-                    Button(onClick = onNewRound) {
-                        Text("Next Round")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text("Close")
+                        }
+                        Button(
+                            onClick = onNewRound,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text("Next Round 🎮")
+                        }
                     }
                 }
             }
@@ -114,10 +167,27 @@ private fun ScoreRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(teamName)
-        Text("Tricks: $tricks")
-        Text("Tens: $tens")
+        Text(
+            text = teamName,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "🎴 $tricks",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "🔟 $tens",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 } 

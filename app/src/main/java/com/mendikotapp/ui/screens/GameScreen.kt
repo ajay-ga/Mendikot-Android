@@ -35,6 +35,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
 import androidx.compose.ui.draw.scale
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.ui.graphics.graphicsLayer
 
 @Composable
 private fun TrumpCard(
@@ -670,6 +671,15 @@ private fun TrickResultDisplay(
         )
     )
     
+    // Rotation animation for winner
+    val rotation by animateFloatAsState(
+        targetValue = if (isVisible && isWinner) 360f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+    
     LaunchedEffect(Unit) {
         // Blink effect
         repeat(3) {
@@ -688,7 +698,8 @@ private fun TrickResultDisplay(
             Surface(
                 modifier = Modifier
                     .padding(8.dp)
-                    .scale(scale),
+                    .scale(scale)
+                    .graphicsLayer(rotationZ = if (isWinner) rotation else 0f),
                 shape = MaterialTheme.shapes.medium,
                 color = when {
                     isWinner -> MaterialTheme.colorScheme.tertiary
@@ -700,6 +711,15 @@ private fun TrickResultDisplay(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Winner emojis and animations
+                    if (isWinner) {
+                        Text(
+                            text = "🎉",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    
                     // Show different icons based on win/loss
                     Icon(
                         imageVector = if (isWinner) 
@@ -716,7 +736,7 @@ private fun TrickResultDisplay(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = if (isWinner) 
-                            "$winningPlayer wins the trick!" 
+                            "$winningPlayer wins! 🏆" 
                         else 
                             "Team ${winningTeam + 1} takes the trick",
                         style = MaterialTheme.typography.titleMedium,
@@ -725,6 +745,13 @@ private fun TrickResultDisplay(
                         else 
                             MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (isWinner) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "✨",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
                 }
             }
         }
