@@ -29,6 +29,13 @@ import com.mendikotapp.data.models.GamePhase
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import com.mendikotapp.data.models.Suit
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.ui.draw.scale
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.ui.graphics.graphicsLayer
 
 @Composable
 private fun TrumpCard(
@@ -149,6 +156,7 @@ private fun Scoreboard(
 @Composable
 private fun CurrentPlayerIndicator(
     playerName: String,
+    playerTeam: Int,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -270,11 +278,29 @@ fun GameScreen(
                 }
             }
         } else {
-            // Current player indicator
-            CurrentPlayerIndicator(
-                playerName = gameState?.players?.get(gameState?.currentPlayer ?: 0)?.name ?: "",
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Team information
+                TeamInfo(
+                    team1Players = listOf(
+                        gameState?.players?.get(0)?.name ?: "",
+                        gameState?.players?.get(2)?.name ?: ""
+                    ),
+                    team2Players = listOf(
+                        gameState?.players?.get(1)?.name ?: "",
+                        gameState?.players?.get(3)?.name ?: ""
+                    )
+                )
+                
+                // Current player indicator
+                CurrentPlayerIndicator(
+                    playerName = gameState?.players?.get(gameState?.currentPlayer ?: 0)?.name ?: "",
+                    playerTeam = (gameState?.currentPlayer ?: 0) % 2
+                )
+            }
 
             // Game play area
             Box(
@@ -577,6 +603,157 @@ private fun VerticalPlayerDisplay(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+private fun TeamInfo(
+    team1Players: List<String>,
+    team2Players: List<String>,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Team 1 info
+        Surface(
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.weight(1f).padding(4.dp)
+        ) {
+            Text(
+                text = "Team 1: ${team1Players.joinToString(" & ")}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(8.dp),
+                textAlign = TextAlign.Center
+            )
+        }
+        
+        // Team 2 info
+        Surface(
+            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f),
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.weight(1f).padding(4.dp)
+        ) {
+            Text(
+                text = "Team 2: ${team2Players.joinToString(" & ")}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(8.dp),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrickResultDisplay(
+    winningPlayer: String,
+    winningTeam: Int,
+    currentPlayerTeam: Int,
+    modifier: Modifier = Modifier
+) {
+    var isVisible by remember { mutableStateOf(true) }
+    val isWinner = winningTeam == currentPlayerTeam
+    
+    // Animation for scaling
+    val scale by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0.8f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+    
+    // Rotation animation for winner
+    val rotation by animateFloatAsState(
+        targetValue = if (isVisible && isWinner) 360f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+    
+    LaunchedEffect(Unit) {
+        // Blink effect
+        repeat(3) {
+            delay(300)
+            isVisible = !isVisible
+            delay(300)
+            isVisible = !isVisible
+        }
+    }
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        if (isVisible) {
+            Surface(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .scale(scale)
+                    .graphicsLayer(rotationZ = if (isWinner) rotation else 0f),
+                shape = MaterialTheme.shapes.medium,
+                color = when {
+                    isWinner -> MaterialTheme.colorScheme.tertiary
+                    else -> MaterialTheme.colorScheme.surfaceVariant
+                }.copy(alpha = 0.9f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Winner emojis and animations
+                    if (isWinner) {
+                        Text(
+                            text = "🎉",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    
+                    // Show different icons based on win/loss
+                    Icon(
+                        imageVector = if (isWinner) 
+                            Icons.Filled.Star 
+                        else 
+                            Icons.Filled.Info,
+                        contentDescription = null,
+                        tint = if (isWinner) 
+                            MaterialTheme.colorScheme.onTertiary 
+                        else 
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isWinner) 
+                            "$winningPlayer wins! 🏆" 
+                        else 
+                            "Team ${winningTeam + 1} takes the trick",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (isWinner) 
+                            MaterialTheme.colorScheme.onTertiary 
+                        else 
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (isWinner) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "✨",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
+                }
+            }
         }
     }
 } 
