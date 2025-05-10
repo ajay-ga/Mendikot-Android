@@ -150,9 +150,7 @@ Prompt for next round or home return
 
 ####Step 11: Game Loop
 After each round, provide:
-
-"Start New Round"
-"Return to Home"
+"Close"
 
 
 

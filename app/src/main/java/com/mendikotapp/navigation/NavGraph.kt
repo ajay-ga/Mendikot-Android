@@ -5,9 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.mendikotapp.ui.screens.GameScreen
-import com.mendikotapp.ui.screens.HomeScreen
-import com.mendikotapp.ui.screens.PlayerSetupScreen
+import com.mendikotapp.ui.screens.*
 import com.mendikotapp.viewmodel.GameSetupViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -24,25 +22,50 @@ fun NavGraph(
     ) {
         composable("home") {
             HomeScreen(
-                onNavigateToSetup = { 
-                    navController.navigate("player_setup")
+                onStartGame = {
+                    navController.navigate("game_mode_selection")
                 }
             )
         }
         
-        composable("player_setup") {
+        composable("game_mode_selection") {
+            GameModeSelectionScreen(
+                navController = navController,
+                onModeSelected = { mode ->
+                    viewModel.setGameMode(mode)
+                }
+            )
+        }
+        
+        composable("player_setup/{mode}") { backStackEntry ->
+            val mode = backStackEntry.arguments?.getString("mode")
             PlayerSetupScreen(
                 onNavigateToGame = { 
                     navController.navigate("game") {
                         popUpTo("home") { inclusive = true }
                     }
                 },
-                viewModel = viewModel  // Pass the shared ViewModel
+                viewModel = viewModel,
+                navController = navController
+            )
+        }
+        
+        composable("trump_selection") {
+            TrumpSelectionScreen(
+                viewModel = viewModel,
+                onTrumpSelected = {
+                    navController.navigate("game") {
+                        popUpTo("player_setup") { inclusive = true }
+                    }
+                }
             )
         }
         
         composable("game") {
-            GameScreen(viewModel = viewModel)  // Pass the same shared ViewModel
+            GameScreen(
+                viewModel = viewModel,
+                navController = navController
+            )
         }
     }
 } 

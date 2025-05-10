@@ -57,54 +57,84 @@ class TrickPlayingRepository @Inject constructor() {
     }
     
     fun playCard(state: GameState, playerIndex: Int, cardIndex: Int): GameState {
-        if (state.gamePhase != GamePhase.PLAYING) {
-            Log.e("TrickPlayingRepository", "Cannot play card - wrong game phase: ${state.gamePhase}")
-            return state
-        }
+        Log.d("TrickPlaying", "=== Playing Card ===")
+        Log.d("TrickPlaying", "Player $playerIndex playing card at index $cardIndex")
+        Log.d("TrickPlaying", "Before play - Hand size: ${state.players[playerIndex].hand.size}")
         
         val player = state.players[playerIndex]
-        val card = player.removeCard(cardIndex)
+        val card = player.hand[cardIndex]
         
-        Log.d("TrickPlayingRepository", "\n=== Card Played ===")
-        Log.d("TrickPlayingRepository", "${player.name} played: $card")
+        // Create new hand without the played card
+        val newHand = player.hand.toMutableList()
+        newHand.removeAt(cardIndex)
         
+        // Create new player with updated hand
+        val updatedPlayer = Player(
+            id = player.id,
+            name = player.name,
+            isHuman = player.isHuman,
+            team = player.team,
+            _hand = newHand
+        )
+        
+        // Update players list
+        val newPlayers = state.players.toMutableList()
+        newPlayers[playerIndex] = updatedPlayer
+        
+        // Add card to current trick
         val newTrick = state.currentTrick + (playerIndex to card)
-        val newLedSuit = if (state.currentTrick.isEmpty()) card.suit else state.ledSuit
-        val nextPlayer = (playerIndex + 1) % 4
         
-        // If trick is complete (4 cards), determine winner
+        // Set led suit if this is the first card of the trick
+        val newLedSuit = if (state.currentTrick.isEmpty()) card.suit else state.ledSuit
+        
+        Log.d("TrickPlaying", "After play - Hand size: ${newHand.size}")
+        Log.d("TrickPlaying", "Current trick size: ${newTrick.size}")
+        Log.d("TrickPlaying", "Led suit: $newLedSuit")
+
+        // If trick is complete, determine winner and update scores
         if (newTrick.size == 4) {
-            val (winnerIndex, winningCard) = determineTrickWinner(newTrick, state.trumpCard?.suit)
-            Log.d("TrickPlayingRepository", "\n=== Trick Complete ===")
-            Log.d("TrickPlayingRepository", "Trick: ${newTrick.joinToString { "${state.players[it.first].name}: ${it.second}" }}")
-            Log.d("TrickPlayingRepository", "Winner: ${state.players[winnerIndex].name} with $winningCard")
-            Log.d("TrickPlayingRepository", "Next player to lead: ${state.players[winnerIndex].name}")
+            val (winnerIndex, _) = determineTrickWinner(newTrick, state.trumpCard?.suit)
+            Log.d("TrickPlaying", "Trick completed - Winner: Player $winnerIndex")
             
-            return GameState(
-                players = state.players,
-                currentDealer = state.currentDealer,
-                currentPlayer = winnerIndex,  // Winner leads next trick
-                trumpCard = state.trumpCard,
-                trumpRevealed = state.trumpRevealed,
-                currentTrick = emptyList(),  // Clear trick
-                ledSuit = null,  // Reset led suit for next trick
-                completedTricks = state.completedTricks + listOf(newTrick),  // Wrap newTrick in listOf()
-                team1Score = state.team1Score + if (winnerIndex % 2 == 0) 1 else 0,
-                team2Score = state.team2Score + if (winnerIndex % 2 == 1) 1 else 0,
-                team1Tens = state.team1Tens + if (winnerIndex % 2 == 0) newTrick.count { it.second.isTen } else 0,
-                team2Tens = state.team2Tens + if (winnerIndex % 2 == 1) newTrick.count { it.second.isTen } else 0,
-                gamePhase = state.gamePhase,
-                roundState = state.roundState,
-                roundHistory = state.roundHistory
-            )
-        } else {
-            Log.d("TrickPlayingRepository", "Next player: ${state.players[nextPlayer].name}")
+            // Count tens in the trick
+            val tensInTrick = newTrick.count { it.second.isTen }
+            
+            // Update scores based on winner's team
+            val winningTeam = winnerIndex % 2
+            val (newTeam1Score, newTeam2Score) = if (winningTeam == 0) {
+                Pair(state.team1Score + 1, state.team2Score)
+            } else {
+                Pair(state.team1Score, state.team2Score + 1)
+            }
+            
+            // Update tens count based on winner's team
+            val (newTeam1Tens, newTeam2Tens) = if (winningTeam == 0) {
+                Pair(state.team1Tens + tensInTrick, state.team2Tens)
+            } else {
+                Pair(state.team1Tens, state.team2Tens + tensInTrick)
+            }
+            
+            Log.d("TrickPlaying", "Team 1 Score: $newTeam1Score, Tens: $newTeam1Tens")
+            Log.d("TrickPlaying", "Team 2 Score: $newTeam2Score, Tens: $newTeam2Tens")
+            
             return state.copy(
+                players = newPlayers,
                 currentTrick = newTrick,
+                currentPlayer = winnerIndex,  // Winner leads next trick
                 ledSuit = newLedSuit,
-                currentPlayer = nextPlayer
+                team1Score = newTeam1Score,
+                team2Score = newTeam2Score,
+                team1Tens = newTeam1Tens,
+                team2Tens = newTeam2Tens
             )
         }
+        
+        return state.copy(
+            players = newPlayers,
+            currentTrick = newTrick,
+            currentPlayer = (playerIndex + 1) % 4,
+            ledSuit = newLedSuit
+        )
     }
     
     fun revealTrump(gameState: GameState): GameState {
