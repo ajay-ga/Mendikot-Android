@@ -597,4 +597,129 @@ private fun VerticalPlayerDisplay(
             )
         }
     }
+}
+
+@Composable
+private fun TeamInfo(
+    team1Players: List<String>,
+    team2Players: List<String>,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Team 1 info
+        Surface(
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.weight(1f).padding(4.dp)
+        ) {
+            Text(
+                text = "Team 1: ${team1Players.joinToString(" & ")}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(8.dp),
+                textAlign = TextAlign.Center
+            )
+        }
+        
+        // Team 2 info
+        Surface(
+            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f),
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.weight(1f).padding(4.dp)
+        ) {
+            Text(
+                text = "Team 2: ${team2Players.joinToString(" & ")}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(8.dp),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrickResultDisplay(
+    winningPlayer: String,
+    winningTeam: Int,
+    currentPlayerTeam: Int,
+    modifier: Modifier = Modifier
+) {
+    var isVisible by remember { mutableStateOf(true) }
+    val isWinner = winningTeam == currentPlayerTeam
+    
+    // Animation for scaling
+    val scale by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0.8f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+    
+    LaunchedEffect(Unit) {
+        // Blink effect
+        repeat(3) {
+            delay(300)
+            isVisible = !isVisible
+            delay(300)
+            isVisible = !isVisible
+        }
+    }
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        if (isVisible) {
+            Surface(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .scale(scale),
+                shape = MaterialTheme.shapes.medium,
+                color = when {
+                    isWinner -> MaterialTheme.colorScheme.tertiary
+                    else -> MaterialTheme.colorScheme.surfaceVariant
+                }.copy(alpha = 0.9f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Show different icons based on win/loss
+                    Icon(
+                        imageVector = if (isWinner) 
+                            Icons.Filled.Star 
+                        else 
+                            Icons.Filled.Info,
+                        contentDescription = null,
+                        tint = if (isWinner) 
+                            MaterialTheme.colorScheme.onTertiary 
+                        else 
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isWinner) 
+                            "$winningPlayer wins the trick!" 
+                        else 
+                            "Team ${winningTeam + 1} takes the trick",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (isWinner) 
+                            MaterialTheme.colorScheme.onTertiary 
+                        else 
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
 } 
