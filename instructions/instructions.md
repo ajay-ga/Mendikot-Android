@@ -24,127 +24,134 @@ Themes: Material + Custom XML
 
 ####Step 1: App Initialization & Splash Screen
 
-Display animated splash screen (using Lottie)
-Navigate to home screen after delay
+Animated Lottie splash screen
+Delayed navigation to Home Screen
 
 ####Step 2: Home Screen
-
 UI Components:
 
-Button: "Start New Game"
+"Start New Game" button
+
+Behavior:
+
+On click → navigate to Game Mode Selection Screen
+
+####Step 3: Game Mode Selection Screen
+UI Components:
+
+Radio or card-style options:
+
+🧍 Single Player (1 human + 3 bots)
+🤝 Manual 4 Player (local multiplayer)
+
 
 
 Behavior:
 
-On click, navigate to Player Setup screen
+On selection → navigate to Player Setup Screen with appropriate form
 
-
-
-####Step 3: Player Setup Screen
-
-UI Components:
+####Step 4: Player Setup Screen
+Single Player Mode:
 
 Input field: Human player name
-Display: Three bot names auto-filled
+3 Bot names auto-filled
 Button: "Proceed"
 
+Manual 4-Player Mode:
+
+Input fields: Player 1, 2, 3, 4
+Optional team selection (drag-and-drop or auto-assign)
+Button: "Proceed"
 
 Behavior:
 
-Store names and navigate to Game Screen
+Store player names → navigate to Game Screen
+
+####Step 5: Game Setup Logic
+Common to both modes:
+
+Random dealer selection (initial round only)
+Cards dealt in 5 + 4 + 4 format (total 13)
+Player to dealer's right selects one face-down trump card from their hand
+
+Manual Mode:
+
+During trump selection, show only that player's hand on the screen
+Human manually selects the trump card → system hides it until revealed
+System prompts pass-and-play message after trump selection
+
+####Step 6: Game Screen Layout
+Single Player Mode:
+
+Show human hand (bottom)
+Bot hands as card backs
+Highlight current turn
+
+Manual Mode:
+
+Show only the current player's cards
+Cards are hidden until their turn
+Display "Pass device to Player X" prompt between turns
+
+####Step 7: Trick Playing Logic (Both Modes)
+
+Player to dealer's right starts
+Must follow suit if possible
+If unable to follow:
+
+May reveal trump (once per round)
+Trump card is added back to hand upon reveal
 
 
 
-####Step 4: Game Setup Logic
+Trick winner rules:
 
-Shuffle and distribute 13 cards per player (5 + 4 + 4 format)
-Player to dealer's right selects one card from hand and places it face-down as trump
-Store the trump card and exclude it from the hand until revealed
-Determine first dealer randomly; after that, follow win-based rules for next dealer
+Highest of lead suit wins unless trump played
+Highest trump wins if any are played
 
-####Step 5: Game Screen Layout
+####Step 8: Bot AI (Only for Single Player)
 
-Display table layout (4 players at 4 corners)
-Show human player's hand at bottom
-Bot hands shown as card backs
-Indicate player turns with highlights or arrows
-Provide access to trick history and scoreboard
+Follow suit, trump strategy, avoid wasting high cards
+Avoid beating partner's winning card
+Attempt to collect 10s strategically
 
-####Step 6: Trick Playing Logic
+####Step 9: Trick & Round Tracking
 
-Player to dealer's right leads the first trick
-Follow-suit rule enforced
-If player has no card in the led suit:
+Maintain per-team count of:
 
-Option to reveal trump (only once per round)
-If trump is revealed:
+Tricks won
+Tens won
 
-Trump suit is now active for all future tricks
-Trump card added back to owner's hand
-Player who revealed trump must play a trump if they have one
+
+Detect:
+
+Mendikot: All four 10s captured
+Whitewash: All 13 tricks captured
 
 
 
+Round Win Logic:
 
-Determine trick winner:
+Team with 3 or 4 tens wins
+If 2-2 tens → team with 7+ tricks wins
 
-If no trump played: highest card of led suit wins
-If trump played: highest trump wins
+####Step 10: Scoreboard & Feedback
+Live during game:
 
-
-
-####Step 7: Bot AI
-
-Basic rule-following bot logic:
-
-Follow suit when possible
-If can't follow suit, consider trumping
-Attempt to win tens
-Work with partner (avoid over-trumping if partner is winning)
-Request trump only if beneficial
-
-
-
-####Step 8: Trick and Round Tracking
-
-Maintain trick count for each team
-Track 10s won by each team
-Detect special wins:
-
-Mendikot (all 4 tens)
-Whitewash (all 13 tricks)
-
-
-Decide round winner:
-
-3 or 4 tens = win
-2-2 tens: 7+ tricks = win
-
-
-
-####Step 9: Scoreboard and UI Feedback
-
-Show live:
-
-Team scores (tricks and tens)
-Trump suit (after revealed)
-Current trick leader
-
+Team trick/10s count
+Trump suit (once revealed)
+Current leader of trick
 
 After round ends:
 
-Show winning team
-Show type of win (regular, mendikot, whitewash)
-Determine next dealer
+Winning team name
+Win type (regular, mendikot, whitewash)
+Prompt for next round or home return
 
+####Step 11: Game Loop
+After each round, provide:
+"Close"
 
-
-####Step 10: Game Loop
-
-After each round, allow player to:
-
-Start new round
-Return to home screen
 
 
 ###📁 Project Structure
@@ -165,6 +172,7 @@ src/
     │   │   ├── screens/
     │   │   │   ├── HomeScreen.kt
     │   │   │   ├── PlayerSetupScreen.kt 
+    │   │   │   ├── ModeSelectionScreen.kt
     │   │   │   ├── TrumpSelectionScreen.kt
     │   │   │   ├── GameScreen.kt
     │   │   │   └── ResultScreen.kt

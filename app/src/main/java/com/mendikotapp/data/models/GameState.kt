@@ -49,6 +49,7 @@ data class GameState(
     val players: List<Player>,
     val currentDealer: Int,
     val currentPlayer: Int,
+    val gamePhase: GamePhase,
     val trumpCard: Card? = null,
     val trumpRevealed: Boolean = false,
     val currentTrick: List<Pair<Int, Card>> = emptyList(),
@@ -60,7 +61,7 @@ data class GameState(
     val team2Tens: Int = 0,
     val roundState: RoundState = RoundState.IN_PROGRESS,
     val roundHistory: List<RoundResult> = emptyList(),
-    val gamePhase: GamePhase = GamePhase.TRUMP_SELECTION
+    val gameMode: String = "single_player"
 )
 
 enum class RoundState {

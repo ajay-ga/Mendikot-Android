@@ -33,6 +33,9 @@ class GameSetupViewModel @Inject constructor(
     private val _gameState = MutableStateFlow<GameState?>(null)
     val gameState: StateFlow<GameState?> = _gameState.asStateFlow()
     
+    private val _gameMode = MutableStateFlow<String?>(null)
+    val gameMode: StateFlow<String?> = _gameMode.asStateFlow()
+    
     private val viewModelScope = CoroutineScope(Dispatchers.Main + Job())
     
     init {
@@ -40,57 +43,58 @@ class GameSetupViewModel @Inject constructor(
         Log.d("GameSetupViewModel", "ViewModel initialized")
     }
     
-    fun initializeGame(humanPlayerName: String) {
-        Log.d("GameSetupViewModel", "Initializing game with player: $humanPlayerName")
+    fun setGameMode(mode: String) {
+        _gameMode.value = mode
+    }
+    
+    fun initializeGame(
+        player1Name: String,
+        player2Name: String = "Bot 1",
+        player3Name: String = "Bot 2",
+        player4Name: String = "Bot 3"
+    ) {
+        val isMultiPlayer = _gameMode.value == "manual_4_player"
         
-        // Create players
+        // Create players based on mode
         val players = listOf(
             Player(
                 id = 0,
-                name = humanPlayerName,
+                name = player1Name,
                 isHuman = true,
                 team = 0,
                 _hand = mutableListOf()
             ),
             Player(
                 id = 1,
-                name = "Bot 1",
-                isHuman = false,
+                name = player2Name,
+                isHuman = isMultiPlayer,
                 team = 1,
                 _hand = mutableListOf()
             ),
             Player(
                 id = 2,
-                name = "Bot 2",
-                isHuman = false,
+                name = player3Name,
+                isHuman = isMultiPlayer,
                 team = 0,
                 _hand = mutableListOf()
             ),
             Player(
                 id = 3,
-                name = "Bot 3",
-                isHuman = false,
+                name = player4Name,
+                isHuman = isMultiPlayer,
                 team = 1,
                 _hand = mutableListOf()
             )
         )
 
-        // Initialize game state with random dealer
-        // FIXME: Fix this logic as if dealer is bot3, the trump card is not being selected
-        var dealer = Random.nextInt(4)
-        if(dealer == 3) {
-            dealer = 2
-        }
-        Log.d("GameSetupViewModel", "Selected dealer: $dealer")
-        
-        val initialState = GameState(
+        // Initialize new game state with the game mode
+        _gameState.value = GameState(
             players = players,
-            currentDealer = dealer,
-            currentPlayer = (dealer + 1) % 4,  // Set current player to right of dealer
-            gamePhase = GamePhase.TRUMP_SELECTION
+            currentDealer = Random.nextInt(4),
+            currentPlayer = 0,
+            gamePhase = GamePhase.TRUMP_SELECTION,
+            gameMode = _gameMode.value ?: "single_player"  // Set the game mode
         )
-        _gameState.value = initialState
-        Log.d("GameSetupViewModel", "Initial state set: $initialState")
 
         // Deal cards
         gameRepository.dealCards(players)
@@ -102,7 +106,7 @@ class GameSetupViewModel @Inject constructor(
         )
         
         // If the player to dealer's right is a bot, have them select trump immediately
-        val rightOfDealer = (dealer + 1) % 4
+        val rightOfDealer = (_gameState.value?.currentDealer ?: 0 + 1) % 4
         if (!players[rightOfDealer].isHuman) {
             Log.d("GameSetupViewModel", "Bot selecting trump")
             // Simulate bot selecting trump after a short delay
@@ -161,63 +165,93 @@ class GameSetupViewModel @Inject constructor(
                 gamePhase = GamePhase.PLAYING
             )
             
-            _gameState.value = newState
+
             
             // Add longer delay after trump selection to show the selected card
             delay(3000)
+            _gameState.value = newState
             
             // Start bot moves if next player is a bot
             if (!newState.players[newState.currentPlayer].isHuman) {
                 handleBotMoves()
+            } else {
+                if (roundTracker.isRoundComplete(newState)) {
+                    Log.d("GameSetupViewModel", "Round completed")
+                    val result = roundTracker.determineRoundResult(newState)
+                    val newState1 = newState.copy(
+                        roundState = RoundState.COMPLETED,
+                        roundHistory = newState.roundHistory + result
+                    )
+                    _gameState.value = newState1
+                    delay(2000) // Extra delay at round end
+//                    break
+                }
             }
+
+
         }
     }
     
     fun playCard(playerIndex: Int, cardIndex: Int) {
-        viewModelScope.launch {  // Make playCard a suspend function
+        viewModelScope.launch {
             val currentState = _gameState.value ?: run {
                 Log.e("GameSetupViewModel", "Current state is null during play card")
                 return@launch
             }
-            
-            Log.d("GameSetupViewModel", "=== Playing Card ===")
-            Log.d("GameSetupViewModel", "Player: ${currentState.players[playerIndex].name}")
-            Log.d("GameSetupViewModel", "Card index: $cardIndex")
-            Log.d("GameSetupViewModel", "Game phase: ${currentState.gamePhase}")
-            
-            // Check if we're in the playing phase
-            if (currentState.gamePhase != GamePhase.PLAYING) {
-                Log.e("GameSetupViewModel", "Cannot play card - wrong game phase: ${currentState.gamePhase}")
-                return@launch
+
+            Log.d("GameSetupViewModel", "=== Before Playing Card ===")
+            currentState.players.forEachIndexed { index, player ->
+                Log.d("GameSetupViewModel", "Player $index hand size: ${player.hand.size}")
             }
+            Log.d("GameSetupViewModel", "Current trick size: ${currentState.currentTrick.size}")
             
-            // Verify it's the player's turn
-            if (currentState.currentPlayer != playerIndex) {
-                Log.e("GameSetupViewModel", "Not player's turn. Current player: ${currentState.currentPlayer}")
-                return@launch
+            // Play the card and update state
+            val playedState = trickPlayingRepository.playCard(currentState, playerIndex, cardIndex)
+            
+            Log.d("GameSetupViewModel", "=== After Playing Card ===")
+            playedState.players.forEachIndexed { index, player ->
+                Log.d("GameSetupViewModel", "Player $index hand size: ${player.hand.size}")
             }
+            Log.d("GameSetupViewModel", "Current trick size: ${playedState.currentTrick.size}")
             
-            // For human player
-            if (currentState.players[playerIndex].isHuman) {
-                val selectedCard = currentState.players[playerIndex].hand[cardIndex]
-                Log.d("GameSetupViewModel", "Human selected card: $selectedCard")
+            _gameState.value = playedState
+
+            // If trick is complete, handle completion
+            if (playedState.currentTrick.size == 4) {
+                delay(2000) // Show completed trick
                 
-                if (!trickPlayingRepository.canPlayCard(currentState, playerIndex, selectedCard)) {
-                    Log.e("GameSetupViewModel", "Invalid card play")
-                    return@launch
+                Log.d("GameSetupViewModel", "=== Completing Trick ===")
+                // Create new state with empty trick and reset ledSuit
+                val nextState = playedState.copy(
+                    currentTrick = emptyList(),
+                    completedTricks = playedState.completedTricks + listOf(playedState.currentTrick),
+                    ledSuit = null  // Reset ledSuit for next trick
+                )
+                
+                nextState.players.forEachIndexed { index, player ->
+                    Log.d("GameSetupViewModel", "Player $index hand size: ${player.hand.size}")
                 }
                 
-                // Play the card and update state
-                val newState = trickPlayingRepository.playCard(currentState, playerIndex, cardIndex)
-                _gameState.value = newState
-                
-                // If trick is complete, add delay before next action
-                if (newState.currentTrick.size == 4) {
-                    delay(2000) // 2 second delay to show completed trick
+                _gameState.value = nextState
+
+                // Check for round completion
+                if (roundTracker.isRoundComplete(nextState)) {
+                    val result = roundTracker.determineRoundResult(nextState)
+                    val finalState = nextState.copy(
+                        roundState = RoundState.COMPLETED,
+                        roundHistory = nextState.roundHistory + result
+                    )
+                    _gameState.value = finalState
+                    delay(1000)
+                } else {
+                    // Continue with bot moves if next player is a bot
+                    if (!nextState.players[nextState.currentPlayer].isHuman) {
+                        handleBotMoves()
+                    }
                 }
-                
-                // Trigger bot moves after human move if next player is a bot
-                if (!newState.players[newState.currentPlayer].isHuman) {
+            } else {
+                // Handle bot moves for incomplete trick if next player is a bot
+                if (!playedState.players[playedState.currentPlayer].isHuman) {
                     handleBotMoves()
                 }
             }
@@ -228,9 +262,8 @@ class GameSetupViewModel @Inject constructor(
         viewModelScope.launch {
             var state = _gameState.value ?: return@launch
             
-            // Continue while current player is a bot
             while (!state.players[state.currentPlayer].isHuman && 
-                   state.currentTrick.size < 4) {
+                   state.roundState != RoundState.COMPLETED) {
                 
                 val botPlayer = state.players[state.currentPlayer]
                 Log.d("GameSetupViewModel", "Bot ${botPlayer.name} thinking...")
@@ -259,22 +292,28 @@ class GameSetupViewModel @Inject constructor(
                 // Add delay after each bot move
                 delay(1500) // 1.5 seconds delay
                 
-                // If trick is complete, add extra delay
+                // Handle trick completion
                 if (state.currentTrick.size == 4) {
-                    delay(2000) // 2 seconds delay for completed trick
-                }
-                
-                // Check if round is complete
-                if (roundTracker.isRoundComplete(state)) {
-                    Log.d("GameSetupViewModel", "Round completed")
-                    val result = roundTracker.determineRoundResult(state)
+                    delay(2000) // Show completed trick
+                    
+                    // Create new state with empty trick
                     state = state.copy(
-                        roundState = RoundState.COMPLETED,
-                        roundHistory = state.roundHistory + result
+                        currentTrick = emptyList(),
+                        completedTricks = state.completedTricks + listOf(state.currentTrick),
+                        ledSuit = null
                     )
                     _gameState.value = state
-                    delay(2000) // Extra delay at round end
-                    break
+                    
+                    // Check for round completion
+                    if (roundTracker.isRoundComplete(state)) {
+                        val result = roundTracker.determineRoundResult(state)
+                        state = state.copy(
+                            roundState = RoundState.COMPLETED,
+                            roundHistory = state.roundHistory + result
+                        )
+                        _gameState.value = state
+                        break
+                    }
                 }
             }
         }
@@ -301,21 +340,21 @@ class GameSetupViewModel @Inject constructor(
                 ),
                 Player(
                     id = 1,
-                    name = "Bot 1",
+                    name = "Player 2",
                     isHuman = false,
                     team = 1,
                     _hand = mutableListOf()
                 ),
                 Player(
                     id = 2,
-                    name = "Bot 2",
+                    name = "Player 3",
                     isHuman = false,
                     team = 0,
                     _hand = mutableListOf()
                 ),
                 Player(
                     id = 3,
-                    name = "Bot 3",
+                    name = "Player 4",
                     isHuman = false,
                     team = 1,
                     _hand = mutableListOf()
@@ -362,5 +401,11 @@ class GameSetupViewModel @Inject constructor(
         Log.d("GameSetupViewModel", "- Game phase: ${newState.gamePhase}")
         
         _gameState.value = newState
+    }
+
+    fun canPlayCard(playerIndex: Int, card: Card): Boolean {
+        return _gameState.value?.let { state ->
+            trickPlayingRepository.canPlayCard(state, playerIndex, card)
+        } ?: false
     }
 } 

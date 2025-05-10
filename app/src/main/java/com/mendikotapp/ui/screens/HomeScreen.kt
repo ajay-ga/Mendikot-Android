@@ -2,7 +2,7 @@ package com.mendikotapp.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -12,7 +12,7 @@ import com.mendikotapp.R
 
 @Composable
 fun HomeScreen(
-    onNavigateToSetup: () -> Unit
+    onStartGame: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -22,18 +22,18 @@ fun HomeScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = stringResource(R.string.app_name),
+            text = "Mendikot",
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.primary
         )
-
+        
         Spacer(modifier = Modifier.height(32.dp))
-
+        
         Button(
-            onClick = onNavigateToSetup,
-            modifier = Modifier.fillMaxWidth()
+            onClick = onStartGame,
+            modifier = Modifier.fillMaxWidth(0.8f)
         ) {
-            Text(stringResource(R.string.start_new_game))
+            Text("Start New Game")
         }
     }
 } 

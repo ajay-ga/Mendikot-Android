@@ -1,5 +1,6 @@
 package com.mendikotapp.data.scoring
 
+import android.util.Log
 import com.mendikotapp.data.models.*
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -7,8 +8,10 @@ import javax.inject.Singleton
 @Singleton
 class RoundTracker @Inject constructor() {
     
-    fun isRoundComplete(gameState: GameState): Boolean {
-        return gameState.completedTricks.size == 13
+    fun isRoundComplete(state: GameState): Boolean {
+        val handSizes = state.players.map { it.hand.size }
+        Log.d("RoundTracker", "Hand sizes: $handSizes")
+        return handSizes.all { it == 0 }
     }
     
     fun determineRoundResult(gameState: GameState): RoundResult {

@@ -144,14 +144,6 @@ fun RoundSummaryDialog(
                         TextButton(onClick = onDismiss) {
                             Text("Close")
                         }
-                        Button(
-                            onClick = onNewRound,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Text("Next Round 🎮")
-                        }
                     }
                 }
             }
